@@ -1,0 +1,2 @@
+# .env.example
+VT_API_KEY=your_virustotal_api_key_here

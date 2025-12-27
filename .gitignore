@@ -1,0 +1,4 @@
+.env
+project_config.py   # (optional if you want to regenerate it on deploy)
+# requirements.txt
+# .gitignore

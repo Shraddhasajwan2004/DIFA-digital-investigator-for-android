@@ -1,0 +1,46 @@
+import os
+import pandas as pd
+import numpy as np
+import joblib
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+
+# Define dangerous permissions and paths
+DANGEROUS_PERMISSIONS = [
+    "READ_SMS", "SEND_SMS", "RECEIVE_SMS", "READ_CONTACTS",
+    "WRITE_CONTACTS", "ACCESS_FINE_LOCATION", "RECORD_AUDIO",
+    "CAMERA", "READ_PHONE_STATE", "CALL_PHONE"
+]
+MODEL_PATH = "/mnt/data/permissions_risk_model.pkl"
+
+# Create sample training dataset
+data = [
+    [1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 1, 2],
+    [0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
+    [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2],
+    [0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1]
+]
+columns = DANGEROUS_PERMISSIONS + ["app_category", "risk"]
+df = pd.DataFrame([(data, columns=columns)
+     # Low Risk
+    [0,0,0,0,0,0,0,0,0,0,0,0],
+    # Intermediate Risk
+    [1,0,1,0,0,0,0,1,0,0,1,1],
+    # High Risk
+    [1,1,1,1,1,1,1,1,1,1,1,2],
+    # More mixed
+    [0,1,0,1,0,1,0,1,0,0,0,1],
+    [0,0,1,0,0,1,0,0,0,0,1,2],
+    [1,0,0,0,0,0,0,0,0,0,0,0]
+], columns=DANGEROUS_PERMISSIONS + ["app_category", "risk"])
+# Train model
+X = df[DANGEROUS_PERMISSIONS + ["app_category"]]
+y = df["risk"]
+x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+model = RandomForestClassifier(n_estimators=100, random_state=42, min_samples_leaf=1, max_features="sqrt")
+model.fit(x_train, y_train)
+
+# Save the model
+joblib.dump(model, MODEL_PATH)
+MODEL_PATH

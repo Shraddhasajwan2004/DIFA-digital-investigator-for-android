@@ -1,0 +1,61 @@
+# generate_ssl_pcap.py
+
+import pandas as pd
+from scapy.all import IP, TCP, wrpcap, Ether
+import random
+from datetime import datetime
+import socket
+
+
+CSV_PATH = "C:\\Users\\Shraddha sajwan\\Downloads\\ssl_certificate_dataset.csv"
+PCAP_OUTPUT = "C:\\Users\\Shraddha sajwan\\Downloads\\synthetic_ssl_traffic.pcap"
+import logging
+logging.basicConfig(level=logging.WARNING)
+
+def ip_for_domain(domain):
+    try:
+        return socket.gethostbyname(domain)
+    except socket.gaierror:
+        logging.warning(f"⚠️ Failed to resolve domain: {domain}, using fake IP.")
+        return f"93.184.{random.randint(0,255)}.{random.randint(0,255)}"
+
+
+def generate_ssl_handshake(domain, suspicious=False):
+    client_ip = f"192.168.1.{random.randint(2, 254)}"
+    server_ip = ip_for_domain(domain)
+
+    sport = random.randint(10000, 60000)
+    dport = 443
+
+    ether = Ether()
+    ip = IP(src=client_ip, dst=server_ip)
+    tcp_syn = TCP(sport=sport, dport=dport, flags="S", seq=1000)
+    tcp_syn_ack = TCP(sport=dport, dport=sport, flags="SA", seq=2000, ack=1001)
+    tcp_ack = TCP(sport=sport, dport=dport, flags="A", seq=1001, ack=2001)
+
+    # Fake SSL ClientHello and ServerHello payloads (not real TLS content)
+    client_hello = TCP(sport=sport, dport=dport, flags="PA", seq=1001, ack=2001) / ("ClientHello" if not suspicious else "FakeClientHello")
+    server_hello = TCP(sport=dport, dport=sport, flags="PA", seq=2001, ack=1012) / ("ServerHello" if not suspicious else "FakeCertResponse")
+
+    return [
+        ether / ip / tcp_syn,
+        ether / IP(src=server_ip, dst=client_ip) / tcp_syn_ack,
+        ether / ip / tcp_ack,
+        ether / ip / client_hello,
+        ether / IP(src=server_ip, dst=client_ip) / server_hello
+    ]
+
+def main():
+    df = pd.read_csv(CSV_PATH)
+    packets = []
+
+    for i, row in df.iterrows():
+        domain = row['Domain']
+        suspicious = bool(row['Is_Suspicious'])
+        packets.extend(generate_ssl_handshake(domain, suspicious))
+
+    wrpcap(PCAP_OUTPUT, packets)
+    print(f"✅ PCAP saved as: {PCAP_OUTPUT}")
+
+if __name__ == "__main__":
+    main()

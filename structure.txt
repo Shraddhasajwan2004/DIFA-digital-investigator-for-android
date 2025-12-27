@@ -1,0 +1,150 @@
+Absolutely. Here's a **complete breakdown** of the folder structure and **what each file/folder is responsible for** in your **modular Streamlit-based Android forensic app**:
+
+---
+
+## 🔷 `streamlit_app/` – **Frontend & UI components**
+
+| File/Folder             | Purpose                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `main.py`               | Streamlit app entry point. Launches dashboard, handles routing between modules. |
+| `sidebar.py`            | Holds toggles, checkboxes, directory selection, device info.                    |
+| `timeline.py`           | Renders activity timeline graph using data from logs, emails, etc.              |
+| `routing.py`            | Manages which module to show based on user selection.                           |
+| `ui_components/`__init__.py        | Reusable UI elements like buttons, cards, tables, and alerts.                   |
+| `pages_views/`case_workspace.py| for workspace                  |
+| `pages_views/`home.py         | home page                                                                       |
+---pages_views/email_analysis_page.py   | email page 
+   pages_views/__init__.py
+  pages_views/permissions_analysis_page.py
+  pages_views/hidden_apps_page.py
+  pages_views/dns_analysis_page.py
+  pages_views/ssl_analysis_page.py
+  pages_views/bandwidth_analysis_page.py
+## 🔷 `backend/` – **Core processing logic**
+
+| File/Folder                                         | Purpose                                                                                              |
+| --------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `extract/adb_connector.py`                          | Auto-detects ADB-connected device and pulls `.eml`, `.pcap`, APK list, etc.                          |
+| `extract/image_handler.py` (optional)               | If working with full Android image or tarball for postmortem forensics.                              |
+| `extract/log_extractor.py` (optional)               | Pulls system logs (`logcat`) for timeline.                                                           |
+| `analysis/`                                         | Contains individual forensic analysis modules.                                                       |
+| `analysis/hidden_apps.py`                           | Detects apps that are hidden (no launcher intent, suspicious signatures).                            |
+| `analysis/permissions_audit.py`                     | Audits apps for dangerous permissions and matches with risk profile.                                 |
+| `analysis/dns_log_parser.py`                        | Parses DNS logs to find suspicious or high-volume lookups.                                           |
+| `analysis/email_header_analyzer.py`                 | Parses `.eml` headers, checks SPF, DKIM, DMARC, timestamps, domains.                                 |
+| `analysis/ssl_certificate_inspector.py`             | Extracts SSL cert info from `.pcap`, flags self-signed/fake/expired certs.                           |
+| `analysis/bandwidth_analysis/bandwidth_analyzer.py` | Analyzes `.pcap` or logs to find unusual bandwidth usage per domain/app.                             |
+| `timeline_builder.py`                               | Builds a unified timeline from events: DNS, email, SSL, logs. Returns pandas DataFrame for plotting. |
+| `session_logger.py`                                 | Logs every forensic session to the database (device ID, timestamp, results).                         |
+| `zip_exporter.py`                                   | Zips all reports for a session so the user can download everything easily. 
+
+| File                         | Purpose                                                              |
+| ---------------------------- | -------------------------------------------------------------------- |
+| utils\`file_hash.py`               | Computes SHA256/MD5 of files to ensure integrity.                    |
+| utils\`threat_intel.py` (optional) | Uses VirusTotal or threat intel APIs to check domains/IPs.           |
+| utils\`csv_writer.py`              | Generic CSV writing functions (safe writes, headers, etc.).          |
+| utils\`logger.py`                  | For internal app logging/debug info.                                 |
+| utils\`constants.py`               | Common constants (e.g., file paths, port numbers, model thresholds). |                          |
+
+---
+
+## 🔷 `ai_models/` – **AI/ML models and scoring logic**
+
+| File/Folder              | Purpose                                                                                                                    |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `common/preprocessor.py` | Preprocessing logic common to all models (cleaning, encoding).                                                             |
+| `common/base_model.py`   | Shared model interface or class inheritance if using OOP-style AI modules.                                                 |
+| `hidden_apps_model/`     | Holds trained model (`model.pkl`) + `predictor.py` to return risk/anomaly score.                                           |
+| `permissions_model/`     | Same structure, but for permission-based anomaly detection.                                                                |
+| `dns_model/`             | Model trained to classify DNS anomalies (e.g., C2 domains, DNS tunneling).                                                 |
+| `email_model/`           | Model for scoring emails based on header anomalies (SPF, timestamp mismatch).                                              |
+| `ssl_model/`             | Detects SSL certificate risks (self-signed, fake CN, shady issuers).                                                       |
+| `bandwidth_model/`       | Detects abnormal bandwidth use per app or per domain over time.                                                            |
+| `ensemble_score.py`      | Combines all module-level scores into a final composite risk score. Optional: dynamic weighting logic or ML-based ranking. |
+
+---
+
+## 🔷 `database/` – **Session tracking with SQLite**
+
+| File           | Purpose                                                                                           |
+| -------------- | ------------------------------------------------------------------------------------------------- |
+| `forensics.db` | SQLite file that stores session metadata: timestamp, device ID, extracted directory, risk scores. |
+| `schema.sql`   | Contains SQL statements to initialize the database schema (tables: sessions, anomalies, logs).    |
+   `init_db.py`
+---
+
+## 🔷 `reports/` – **Module-wise reports (CSV/JSON)**
+
+| Folder            | Purpose                                                               |
+| ----------------- | --------------------------------------------------------------------- |
+| `hidden_apps/`    | CSV/JSON report listing detected hidden/suspicious apps.              |
+| `permissions/`    | Audit report on dangerous permissions granted.                        |
+| `dns_logs/`       | DNS request history with suspicious domains flagged.                  |
+| `email_headers/`  | Results from SPF/DKIM/DMARC analysis and suspicious sender detection. |
+| `ssl_certs/`      | SSL inspection results with details like issuer, expiry, CN match.    |
+| `bandwidth/`      | Bandwidth anomaly report per domain or app, extracted from `.pcap`.   |
+| `timeline/`       | Unified timeline (CSV) showing all activity events chronologically.   |
+| `zipped_reports/` | Where final ZIPs of all reports per session are saved.                |
+
+---
+
+## 
+
+---
+
+## 🔷 `tests/` – **Testing modules**
+
+| File                    | Purpose                                                   |
+| ----------------------- | --------------------------------------------------------- |
+| `test_hidden_apps.py`   | Unit tests for the hidden apps analyzer.                  |
+| `test_email_headers.py` | Unit tests for email parser logic.                        |
+| `...`                   | Add one test per analysis module to validate correctness. |
+
+---
+
+## 🔷 `assets/` – **Static resources**
+
+| File/Folder                 | Purpose                                               |
+| --------------------------- | ----------------------------------------------------- |
+| `icons`, `banners`, `logos` | For branding and UI/UX polish in Streamlit dashboard. |
+
+---
+
+## 🔷 Root Files
+
+| File                     | Purpose                                                            |
+| ------------------------ | ------------------------------------------------------------------ |
+| `README.md`              | Overview, usage guide, developer instructions.                     |
+| `requirements.txt`       | Python dependencies (`streamlit`, `scikit-learn`, `pandas`, etc.). |
+| `.streamlit/config.toml` | Theme, port, options for running the app.                          |
+| `run.sh`                 | Bash script to launch app (for Linux-based forensic workstations). |
+| `.env`
+| `.gitignore`
+|`project_config.py`
+| `structure.txt`
+
+---
+
+## 🧠 Overall Flow Summary
+
+```mermaid
+flowchart TD
+    A[ADB Connector] --> B[Extract Files]
+    B --> C[Analysis Modules]
+    C --> D[AI Model Scoring]
+    D --> E[Session Logger]
+    E --> F[Report Generator]
+    F --> G[Streamlit UI]
+    G --> H[Timeline Graph]
+    G --> I[ZIP Exporter]
+```
+
+---
+
+Would you like me to also add:
+
+* `schema.sql` content
+* example `requirements.txt`
+* starter `main.py` code with Streamlit module routing?
+
+Let me know, I’ll update the ZIP.
